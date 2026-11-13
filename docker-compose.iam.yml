@@ -1,0 +1,26 @@
+
+services:
+  foodly-iam-db:
+    image: postgres:17
+    container_name: foodly-iam-postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: foodly_iam
+      POSTGRES_USER: foodly_iam
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+
+    ports:
+      - "5433:5432"
+
+    volumes:
+      - foodly_iam_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U foodly_iam -d foodly_iam"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  foodly_iam_data:
