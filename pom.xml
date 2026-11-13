@@ -27,6 +27,7 @@
     <properties>
         <java.version>17</java.version>
         <jjwt.version>0.13.0</jjwt.version>
+        <argLine></argLine>
     </properties>
 
     <dependencies>
@@ -91,6 +92,13 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- SWAGGER / OPENAPI -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>3.2.0</version>
+        </dependency>
+
         <!-- TESTING -->
 
         <!-- ACTUATOR TEST -->
@@ -131,13 +139,25 @@
     </dependencies>
 
     <!-- BUILD CONFIGURATION -->
+
     <build>
         <plugins>
+            <!-- SPRING BOOT -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+
+            <!-- MOCKITO JAVA AGENT -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>-javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</argLine>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
+
 
 </project>
