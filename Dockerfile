@@ -1,13 +1,23 @@
+
+# Etapa 1: compilar Foodly IAM
 FROM eclipse-temurin:21-jdk AS build
 
 WORKDIR /app
 
-COPY .mvn .mvn
+# Copiar Maven Wrapper y pom.xml
+COPY .mvn/ .mvn/
 COPY mvnw pom.xml ./
 
 RUN chmod +x mvnw
-RUN ./mvnw clean package -DskipTests -B
 
+# Copiar el código fuente
+COPY src/ src/
+
+# Compilar y generar el JAR ejecutable
+RUN ./mvnw clean package -DskipTests -B \
+    -Dspring-boot.repackage.mainClass=com.foodly.iam.IamServiceApplication
+
+# Etapa 2: ejecutar Foodly IAM
 FROM eclipse-temurin:21-jre
 
 WORKDIR /app
