@@ -21,6 +21,8 @@ foodly:
   jwt:
     secret-base64: ${JWT_SECRET_BASE64}
     expiration-minutes: 60
+    issuer: ${JWT_ISSUER:foodly-iam}
+    audiences: ${JWT_AUDIENCES:foodly-iam,foodly-business,foodly-radar,foodly-messaging,foodly-reservation,foodly-community}
 
 management:
   endpoints:

@@ -13,20 +13,33 @@ import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 @Component
 public class JwtTokenIssuer implements ITokenIssuer {
 
+    /** Audience that identifies IAM itself; every issued token must include it. */
+    static final String IAM_AUDIENCE = "foodly-iam";
+
+    private static final long CLOCK_SKEW_SECONDS = 60;
+
     private final SecretKey signingKey;
     private final long expirationMinutes;
+    private final String issuer;
+    private final List<String> audiences;
 
     public JwtTokenIssuer(
             @Value("${foodly.jwt.secret-base64}")
             String secretBase64,
             @Value("${foodly.jwt.expiration-minutes:60}")
-            long expirationMinutes
+            long expirationMinutes,
+            @Value("${foodly.jwt.issuer}")
+            String issuer,
+            @Value("${foodly.jwt.audiences}")
+            String audiences
     ) {
         byte[] keyBytes = Decoders.BASE64.decode(secretBase64);
 
@@ -42,8 +55,30 @@ public class JwtTokenIssuer implements ITokenIssuer {
             );
         }
 
+        if (issuer == null || issuer.isBlank()) {
+            throw new IllegalArgumentException(
+                    "JWT issuer must not be blank"
+            );
+        }
+
+        List<String> cleanAudiences = audiences == null
+                ? List.of()
+                : Arrays.stream(audiences.split(","))
+                        .map(String::trim)
+                        .filter(audience -> !audience.isEmpty())
+                        .distinct()
+                        .toList();
+
+        if (!cleanAudiences.contains(IAM_AUDIENCE)) {
+            throw new IllegalArgumentException(
+                    "JWT audiences must include " + IAM_AUDIENCE
+            );
+        }
+
         this.signingKey = Keys.hmacShaKeyFor(keyBytes);
         this.expirationMinutes = expirationMinutes;
+        this.issuer = issuer.trim();
+        this.audiences = cleanAudiences;
     }
 
     @Override
@@ -54,6 +89,8 @@ public class JwtTokenIssuer implements ITokenIssuer {
         );
 
         String jwt = Jwts.builder()
+                .issuer(issuer)
+                .audience().add(audiences).and()
                 .subject(user.getId().toString())
                 .claim("role", user.getRole().name())
                 .issuedAt(Date.from(now))
@@ -67,6 +104,9 @@ public class JwtTokenIssuer implements ITokenIssuer {
     public AuthenticatedUser validate(String token) {
         Claims claims = Jwts.parser()
                 .verifyWith(signingKey)
+                .requireIssuer(issuer)
+                .requireAudience(IAM_AUDIENCE)
+                .clockSkewSeconds(CLOCK_SKEW_SECONDS)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
