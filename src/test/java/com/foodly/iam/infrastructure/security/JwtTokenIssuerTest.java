@@ -19,6 +19,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Date;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -71,6 +72,25 @@ class JwtTokenIssuerTest {
         assertEquals(
                 "GASTRONOMIC_EXPLORER",
                 authenticatedUser.role()
+        );
+
+        var claims = Jwts.parser()
+                .verifyWith(Keys.hmacShaKeyFor(Base64.getDecoder().decode(TEST_SECRET)))
+                .build()
+                .parseSignedClaims(token.value())
+                .getPayload();
+
+        assertEquals("foodly-iam", claims.getIssuer());
+        assertEquals(
+                Set.of(
+                        "foodly-iam",
+                        "foodly-business",
+                        "foodly-radar",
+                        "foodly-messaging",
+                        "foodly-reservation",
+                        "foodly-community"
+                ),
+                claims.getAudience()
         );
     }
 
